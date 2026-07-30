@@ -23,6 +23,7 @@ import {
   type FamiliarRuntime,
   normalizeFamiliarRuntime,
 } from "./familiar-runtime.ts";
+import { runtimeOwnsModelDefault } from "./runtime-models.ts";
 import type { UserProfile } from "./user-profile-shared.ts";
 import {
   defaultTravelState,
@@ -585,9 +586,13 @@ export async function uninstallMarketplacePlugin(pluginName: string): Promise<vo
 export function bindingFor(config: CaveConfig, familiarId: string): FamiliarBinding {
   const f = config.familiars[familiarId] ?? {};
   const omnigent = normalizeFamiliarOmnigent(f.omnigent ?? config.defaults.omnigent);
+  const harness = f.harness ?? config.defaults.harness;
   return {
-    harness: f.harness ?? config.defaults.harness,
-    model: f.model ?? config.defaults.model,
+    harness,
+    // Missing is meaningful for runtime-owned defaults: preserve it as an
+    // empty launch value instead of silently reconstructing Cave's global
+    // model. Callers omit empty launch values at the daemon boundary.
+    model: f.model ?? (runtimeOwnsModelDefault(harness) ? "" : config.defaults.model),
     display_name: f.display_name,
     role: f.role,
     familiarType: f.familiarType,

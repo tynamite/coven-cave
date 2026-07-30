@@ -359,7 +359,7 @@ async function runViaSession(body: RunBody) {
     body: {
       projectRoot,
       harness: binding.harness,
-      model: binding.model,
+      ...(binding.model ? { model: binding.model } : {}),
       prompt,
       ...(familiarId ? { familiarId } : {}),
       // Non-interactive launch: the daemon streams the orchestration prompt's
