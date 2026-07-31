@@ -152,7 +152,7 @@ export async function PATCH(req: Request) {
     if (!conversation || conversation.familiarId !== familiarId) return false;
     if (clearModel) {
       const binding = bindingFor(await loadConfig(), familiarId);
-      if (runtimeOwnsModelDefault(binding.harness)) {
+      if (runtimeOwnsModelDefault(canonicalHarnessId(binding.harness))) {
         conversation.modelIntent = {
           model: null,
           source: "runtime-default",

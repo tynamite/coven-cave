@@ -37,8 +37,8 @@ assert.match(route, /next-message scope is composer-local/);
 assert.match(route, /const clearModel = body\.model === null/);
 assert.match(
   route,
-  /if \(runtimeOwnsModelDefault\(binding\.harness\)\) \{[\s\S]*?model: null,[\s\S]*?source: "runtime-default"[\s\S]*?else \{\s*delete conversation\.modelIntent/,
-  "model: null durably selects a runtime-owned default and otherwise restores inheritance",
+  /if \(runtimeOwnsModelDefault\(canonicalHarnessId\(binding\.harness\)\)\) \{[\s\S]*?model: null,[\s\S]*?source: "runtime-default"[\s\S]*?else \{\s*delete conversation\.modelIntent/,
+  "model: null canonicalizes legacy harness aliases before durably selecting a runtime-owned default",
 );
 assert.match(
   route,

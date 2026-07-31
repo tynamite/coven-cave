@@ -47,6 +47,13 @@ assert.match(
   /func enqueue\(_ text: String, attachments: \[CaveClient\.ChatAttachment\] = \[\],\s*\n\s*reasoningEffort: ChatThinkingEffort = \.high,\s*\n\s*responseSpeed: ChatResponseSpeed = \.fast,\s*\n\s*modelOverride: String\? = nil,\s*\n\s*modelOverrideScope: ChatModelOverrideScope\? = nil\)/,
   "ChatThread.enqueue persists offline compose model intent and scope",
 );
+assert.equal(
+  thread.match(
+    /modelOverrideScope: (?:queuedMessage\.)?modelOverrideScope\s*\n\s*\?\? \((?:queuedMessage\.)?modelOverride == nil \? nil : \.session\)/g,
+  )?.length,
+  2,
+  "connected send and offline replay preserve an explicit runtime-default scope even when the model is nil",
+);
 
 // --- Transport-failure conversion: only when provably unsent ----------------
 assert.match(
