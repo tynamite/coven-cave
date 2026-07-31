@@ -47,7 +47,7 @@ struct ChatModelTurnBinding: Equatable {
             return ChatModelTurnBinding(modelOverride: nil, scope: nil)
         }
         if model.isEmpty {
-            return ChatModelTurnBinding(modelOverride: nil, scope: nil)
+            return ChatModelTurnBinding(modelOverride: nil, scope: .session)
         }
         return ChatModelTurnBinding(
             modelOverride: model,

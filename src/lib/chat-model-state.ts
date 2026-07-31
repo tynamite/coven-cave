@@ -43,6 +43,8 @@ export type ResolveChatModelStateInput = {
   globalDefaultModel: string;
   familiarModel?: string | null;
   sessionModel?: string | null;
+  /** A durable session choice that overrides a familiar model with no model argument. */
+  sessionRuntimeDefault?: boolean;
   nextMessageModel?: string | null;
   lastResponseModel?: string | null;
   application?: ModelApplicationInput;
@@ -192,6 +194,15 @@ export function resolveChatModelState(input: ResolveChatModelStateInput): ChatMo
       source: "session",
       applicationState: application?.state ?? "saved",
       reason: application?.reason ?? UNSUPPORTED_REASON,
+    });
+  }
+
+  if (input.sessionRuntimeDefault && runtimeOwnsModelDefault(input.harness)) {
+    return chatModelState(input, {
+      effectiveModel: "",
+      source: "runtime-default",
+      applicationState: "saved",
+      reason: "Using the runtime's configured default model for this chat.",
     });
   }
 

@@ -61,6 +61,24 @@ final class ChatResponseControlsTests: XCTestCase {
         XCTAssertEqual(json["modelOverrideScope"] as? String, "session")
     }
 
+    func testSendBodyEncodesRuntimeDefaultAsExplicitNull() throws {
+        let body = CaveClient.SendBody(
+            familiarId: "grok",
+            prompt: "Review the branch",
+            sessionId: "session-1",
+            projectRoot: "/repos/cave",
+            attachments: nil,
+            modelOverride: nil,
+            modelOverrideScope: .session
+        )
+
+        let data = try JSONEncoder().encode(body)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        XCTAssertTrue(json["modelOverride"] is NSNull)
+        XCTAssertEqual(json["modelOverrideScope"] as? String, "session")
+    }
+
     @MainActor
     func testPendingModelOverridePersistsWithItsThread() {
         let thread = ChatThread(title: "New Nyx chat", familiarIds: ["nyx"])
@@ -296,7 +314,7 @@ final class ChatResponseControlsTests: XCTestCase {
         )
 
         XCTAssertNil(binding.modelOverride)
-        XCTAssertNil(binding.scope)
+        XCTAssertEqual(binding.scope, .session)
         XCTAssertFalse(ChatModelTurnBinding.shouldClearPending(
             "",
             confirmedState: staleSession,

@@ -118,8 +118,13 @@ assert.match(
 );
 assert.match(
   chatView,
-  /const modelOverrideForRequest =[\s\S]{0,300}?modelStateRef\.current\?\.source === "session"/,
+  /const modelOverrideForRequest =[\s\S]{0,500}?modelStateRef\.current\?\.source === "session"[\s\S]{0,300}?modelStateRef\.current\?\.source === "runtime-default"[\s\S]{0,160}?applicationState === "pending"[\s\S]{0,100}?\? null/,
   "send snapshots the synchronously staged model state rather than the prior render",
+);
+assert.match(
+  chatView,
+  /modelOverrideForRequest !== undefined[\s\S]{0,140}?modelOverride: modelOverrideForRequest,[\s\S]{0,100}?modelOverrideScope: "session"/,
+  "an immediate send carries an explicit null session override while a runtime-default PATCH is pending",
 );
 
 // ── The chip face: runtime logo + model, one accessible name ─────────────────

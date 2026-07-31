@@ -13,6 +13,7 @@ const hero = source("../components/chat-familiar-capabilities.tsx");
 const studio = source("../components/familiar-studio-brain-tab.tsx");
 const board = source("../components/board-inspector.tsx");
 const modelState = source("../app/api/chat/model-state/route.ts");
+const directSessions = source("../app/api/sessions/route.ts");
 
 for (const [name, contents, options] of [
   ["home composer", home, "runtimeModelOptions"],
@@ -76,6 +77,11 @@ assert.match(
   modelState,
   /listRuntimeModelInventory\(\s*state\.harness,\s*familiarId,/,
   "the aggregate model-state response gives non-web clients the same inventory",
+);
+assert.match(
+  directSessions,
+  /runtimeOwnsModelDefault\(requestedHarness \?\? "codex"\)[\s\S]{0,80}\? ""[\s\S]{0,80}: config\.defaults\.model/,
+  "unbound direct launches omit Cave's model for runtime-owned harness defaults",
 );
 
 console.log("runtime-model-surfaces.test.ts: ok");

@@ -11,10 +11,11 @@ import {
 import { buildNextPathsDirective } from "@/lib/next-paths";
 import { buildCovenMarkersDirective } from "@/lib/coven-marker-directive";
 import { buildCitationsDirective } from "@/lib/citations-directive";
+import { runtimeOwnsModelDefault } from "@/lib/runtime-models";
 
 type ModelRequest = {
   familiarId: string;
-  modelOverride?: string;
+  modelOverride?: string | null;
   modelOverrideScope?: "next-message" | "session";
 };
 
@@ -34,10 +35,16 @@ export function resolveSendModelMetadata(args: {
   modelForwardingEnabled: boolean;
 }): { desiredModel: string; modelState: ChatModelState } {
   const requestedModel = cleanModelId(args.body.modelOverride);
+  const requestedRuntimeDefault =
+    args.body.modelOverrideScope === "session" &&
+    args.body.modelOverride === null &&
+    runtimeOwnsModelDefault(args.binding.harness);
   const sessionModel =
     args.body.modelOverrideScope === "session"
       ? requestedModel
-      : args.existingConversation?.modelIntent?.model ?? null;
+      : args.existingConversation?.modelIntent?.source === "session"
+        ? args.existingConversation.modelIntent.model
+        : null;
   const modelState = resolveChatModelState({
     familiarId: args.body.familiarId,
     harness: args.binding.harness,
@@ -45,6 +52,10 @@ export function resolveSendModelMetadata(args: {
     globalDefaultModel: args.config.defaults.model,
     familiarModel: args.config.familiars[args.body.familiarId]?.model ?? null,
     sessionModel,
+    sessionRuntimeDefault:
+      requestedRuntimeDefault ||
+      (args.body.modelOverrideScope !== "session" &&
+        args.existingConversation?.modelIntent?.source === "runtime-default"),
     nextMessageModel: args.body.modelOverrideScope === "next-message" ? requestedModel : null,
     application: { supported: args.modelForwardingEnabled },
   });
@@ -56,7 +67,16 @@ export function modelIntentForSend(
   body: ModelRequest,
   modelState: ChatModelState,
 ): ConversationModelIntent | undefined {
-  if (body.modelOverrideScope !== "session" || modelState.source !== "session") return undefined;
+  if (body.modelOverrideScope !== "session") return undefined;
+  if (body.modelOverride === null && modelState.source === "runtime-default") {
+    return {
+      model: null,
+      source: "runtime-default",
+      applicationState: modelState.applicationState,
+      reason: modelState.reason ?? "Using the runtime's configured default model for this chat.",
+    };
+  }
+  if (modelState.source !== "session") return undefined;
   return {
     model: modelState.effectiveModel,
     source: "session",
@@ -69,15 +89,20 @@ export function persistSendModelIntent(
   conversation: ConversationFile,
   body: ModelRequest,
   modelState: ChatModelState,
-  expectedPreviousModel: string | null = conversation.modelIntent?.model ?? null,
+  expectedPreviousIntent: ConversationModelIntent | null = conversation.modelIntent ?? null,
 ): boolean {
   const intent = modelIntentForSend(body, modelState);
   if (!intent) return false;
-  const expected = cleanModelId(expectedPreviousModel);
-  const current = cleanModelId(conversation.modelIntent?.model);
+  const intentKey = `${intent.source}:${cleanModelId(intent.model) ?? ""}`;
+  const expected = expectedPreviousIntent
+    ? `${expectedPreviousIntent.source}:${cleanModelId(expectedPreviousIntent.model) ?? ""}`
+    : "";
+  const current = conversation.modelIntent
+    ? `${conversation.modelIntent.source}:${cleanModelId(conversation.modelIntent.model) ?? ""}`
+    : "";
   // The run captured `expected` before it started. A different current model
   // is a newer mid-stream PATCH and must win over this stale completion.
-  if (current !== expected && current !== intent.model) return false;
+  if (current !== expected && current !== intentKey) return false;
   conversation.modelIntent = intent;
   return true;
 }

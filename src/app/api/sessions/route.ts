@@ -10,6 +10,7 @@ import {
   MAX_SESSION_JSON_BYTES,
   normalizeProjectRoot,
 } from "@/lib/server/session-security";
+import { runtimeOwnsModelDefault } from "@/lib/runtime-models";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,12 @@ export async function POST(req: Request) {
   }
   const binding = familiarId
     ? bindingFor(config, familiarId)
-    : { harness: requestedHarness ?? "codex", model: config.defaults.model };
+    : {
+        harness: requestedHarness ?? "codex",
+        model: runtimeOwnsModelDefault(requestedHarness ?? "codex")
+          ? ""
+          : config.defaults.model,
+      };
   if (requestedHarness !== undefined && familiarId && requestedHarness !== binding.harness) {
     return NextResponse.json({ ok: false, error: "invalid harness" }, { status: 400 });
   }

@@ -178,6 +178,26 @@ assert.equal(
   "xai/grok-code-fast-1",
   "an explicitly configured familiar Grok model remains selectable",
 );
+assert.deepEqual(
+  resolveChatModelState({
+    familiarId: "grok-nova",
+    harness: "grok",
+    runtime: "local:/tmp/coven-cave",
+    globalDefaultModel: "openai/gpt-5.6-sol",
+    familiarModel: "xai/grok-code-fast-1",
+    sessionRuntimeDefault: true,
+  }),
+  {
+    familiarId: "grok-nova",
+    harness: "grok",
+    runtime: "local:/tmp/coven-cave",
+    effectiveModel: "",
+    source: "runtime-default",
+    applicationState: "saved",
+    reason: "Using the runtime's configured default model for this chat.",
+  },
+  "a session runtime-default intent overrides an explicit familiar model",
+);
 assert.equal(
   resolveChatModelState({
     familiarId: "grok-nova",

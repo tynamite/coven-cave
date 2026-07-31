@@ -546,6 +546,29 @@ struct CaveClient {
         /// the send instead of mutating the familiar's global default.
         var modelOverride: String? = nil
         var modelOverrideScope: ChatModelOverrideScope? = nil
+
+        private enum CodingKeys: String, CodingKey {
+            case familiarId, prompt, sessionId, projectRoot, attachments, runId
+            case reasoningEffort, responseSpeed, modelOverride, modelOverrideScope
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(familiarId, forKey: .familiarId)
+            try container.encode(prompt, forKey: .prompt)
+            try container.encodeIfPresent(sessionId, forKey: .sessionId)
+            try container.encodeIfPresent(projectRoot, forKey: .projectRoot)
+            try container.encodeIfPresent(attachments, forKey: .attachments)
+            try container.encodeIfPresent(runId, forKey: .runId)
+            try container.encode(reasoningEffort, forKey: .reasoningEffort)
+            try container.encode(responseSpeed, forKey: .responseSpeed)
+            if let modelOverride {
+                try container.encode(modelOverride, forKey: .modelOverride)
+            } else if modelOverrideScope == .session {
+                try container.encodeNil(forKey: .modelOverride)
+            }
+            try container.encodeIfPresent(modelOverrideScope, forKey: .modelOverrideScope)
+        }
     }
 
     /// One decoded SSE frame: the event plus the server's `id:` (the run

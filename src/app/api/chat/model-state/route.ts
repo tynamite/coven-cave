@@ -10,6 +10,7 @@ import { cleanModelId, resolveChatModelState } from "@/lib/chat-model-state";
 import { canonicalHarnessId } from "@/lib/harness-adapters";
 import { rejectNonLocalRequest } from "@/lib/server/api-security";
 import { listRuntimeModelInventory } from "@/lib/server/runtime-model-options";
+import { runtimeOwnsModelDefault } from "@/lib/runtime-models";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -64,6 +65,7 @@ async function currentState(
     globalDefaultModel: config.defaults.model,
     familiarModel: config.familiars[familiarId]?.model ?? null,
     sessionModel: conversation?.modelIntent?.model,
+    sessionRuntimeDefault: conversation?.modelIntent?.source === "runtime-default",
     nextMessageModel,
     lastResponseModel: lastResponseModel(conversation),
   });
@@ -149,7 +151,17 @@ export async function PATCH(req: Request) {
     const conversation = await loadConversation(sessionId);
     if (!conversation || conversation.familiarId !== familiarId) return false;
     if (clearModel) {
-      delete conversation.modelIntent;
+      const binding = bindingFor(await loadConfig(), familiarId);
+      if (runtimeOwnsModelDefault(binding.harness)) {
+        conversation.modelIntent = {
+          model: null,
+          source: "runtime-default",
+          applicationState: "saved",
+          reason: "Using the runtime's configured default model for this chat.",
+        };
+      } else {
+        delete conversation.modelIntent;
+      }
     } else if (model) {
       conversation.modelIntent = {
         model,

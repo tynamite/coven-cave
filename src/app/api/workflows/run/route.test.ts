@@ -23,6 +23,11 @@ assert.match(
   /if \(await usesLocalCopilotWorkflowRuntime\(body, gateWorkflow\)\) \{\s*return runViaSession\(body\);\s*\}[\s\S]*?runWorkflowEngineAfterCopilotGate\([\s\S]*?localCopilot:\s*false[\s\S]*?runEngine:\s*\(\)\s*=>\s*callDaemon<DaemonRunResponse>/,
   "local Copilot bypasses the separately configured daemon engine and takes the directly probed session path",
 );
+assert.equal(
+  source.match(/runtimeOwnsModelDefault\(config\.defaults\.harness\)/g)?.length,
+  2,
+  "both the workflow routing probe and its eventual unassigned session launch preserve runtime-owned defaults",
+);
 
 // 404 (reachable, no engine) → the session executor runs it for real.
 assert.match(source, /engine\.status === 404[\s\S]{0,80}runViaSession\(body\)/, "a 404 from the engine hands off to the session executor");
@@ -38,8 +43,8 @@ assert.match(
 );
 assert.match(
   source,
-  /\{\s*harness:\s*config\.defaults\.harness,\s*model:\s*config\.defaults\.model\s*\}/,
-  "unassigned workflows inherit both default harness and default model",
+  /runtimeOwnsModelDefault\(config\.defaults\.harness\)[\s\S]{0,80}\? ""[\s\S]{0,80}: config\.defaults\.model/,
+  "unassigned workflows omit Cave's model when the default harness owns its default",
 );
 assert.match(source, /\{\s*familiarId\s*\}/, "session executor passes the familiar to the daemon natively (camelCase familiarId, as the daemon keys on)");
 assert.match(source, /isAllowedHarness\(binding\.harness\)/, "session executor guards the harness allow-list");

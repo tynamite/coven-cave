@@ -37,8 +37,8 @@ assert.match(route, /next-message scope is composer-local/);
 assert.match(route, /const clearModel = body\.model === null/);
 assert.match(
   route,
-  /if \(clearModel\) \{\s*delete conversation\.modelIntent/,
-  "model: null restores the inherited/runtime default for a session",
+  /if \(runtimeOwnsModelDefault\(binding\.harness\)\) \{[\s\S]*?model: null,[\s\S]*?source: "runtime-default"[\s\S]*?else \{\s*delete conversation\.modelIntent/,
+  "model: null durably selects a runtime-owned default and otherwise restores inheritance",
 );
 assert.match(
   route,

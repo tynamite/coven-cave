@@ -50,8 +50,8 @@ assert.match(
 
 assert.match(
   chatRoute,
-  /modelOverride\?: string/,
-  "SendBody should accept a modelOverride without treating it as global config",
+  /modelOverride\?: string \| null/,
+  "SendBody should accept an explicit model or runtime-default clear without treating either as global config",
 );
 assert.match(
   chatRoute,
@@ -70,8 +70,13 @@ assert.match(
 );
 assert.match(
   chatModels,
-  /const sessionModel =[\s\S]*args\.body\.modelOverrideScope === "session"[\s\S]*\? requestedModel[\s\S]*: args\.existingConversation\?\.modelIntent\?\.model \?\? null;/,
-  "Session-scoped send overrides should flow through the same model-state source as desiredModel",
+  /const sessionModel =[\s\S]*args\.body\.modelOverrideScope === "session"[\s\S]*\? requestedModel[\s\S]*args\.existingConversation\?\.modelIntent\?\.source === "session"/,
+  "Session-scoped send overrides and durable intents should flow through the same model-state source as desiredModel",
+);
+assert.match(
+  chatModels,
+  /requestedRuntimeDefault[\s\S]*sessionRuntimeDefault:/,
+  "an explicit null send override must remain distinguishable from an omitted model",
 );
 assert.match(
   chatRoute,

@@ -26,6 +26,7 @@ import { recordRun } from "@/lib/workflow-runs";
 import { loadLocalWorkflowList } from "@/lib/workflow-source";
 import { workflowRunBlockReason, type WorkflowSummary } from "@/lib/workflows";
 import { runWorkflowEngineAfterCopilotGate } from "./copilot-engine-gate";
+import { runtimeOwnsModelDefault } from "@/lib/runtime-models";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +113,12 @@ async function usesLocalCopilotWorkflowRuntime(
   const familiarId = body.familiarId ?? workflow?.familiar ?? null;
   const binding = familiarId
     ? bindingFor(config, familiarId)
-    : { harness: config.defaults.harness, model: config.defaults.model };
+    : {
+        harness: config.defaults.harness,
+        model: runtimeOwnsModelDefault(config.defaults.harness)
+          ? ""
+          : config.defaults.model,
+      };
   const sshBound = "runtime" in binding && isSshRuntime(binding.runtime);
   const hubAuthority = config.multiHost?.mode === "hub";
   return binding.harness === "copilot" && !sshBound && !hubAuthority;
@@ -262,7 +268,12 @@ async function runViaSession(body: RunBody) {
   const familiarId = body.familiarId ?? workflow.familiar ?? null;
   const binding = familiarId
     ? bindingFor(config, familiarId)
-    : { harness: config.defaults.harness, model: config.defaults.model };
+    : {
+        harness: config.defaults.harness,
+        model: runtimeOwnsModelDefault(config.defaults.harness)
+          ? ""
+          : config.defaults.model,
+      };
   if (!isAllowedHarness(binding.harness)) {
     return NextResponse.json(
       { ok: false, error: `harness '${binding.harness}' can't run as an agent session` },

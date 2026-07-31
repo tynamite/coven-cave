@@ -4187,7 +4187,10 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
               modelStateRef.current.effectiveModel &&
               modelStateRef.current.effectiveModel !== "unknown"
             ? modelStateRef.current.effectiveModel
-            : null;
+            : modelStateRef.current?.source === "runtime-default" &&
+                modelStateRef.current.applicationState === "pending"
+              ? null
+              : undefined;
       enqueueMessage({
         text,
         attachments: outgoingAttachments,
@@ -4204,7 +4207,9 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
           ...(outgoingMentions.length
             ? { mentionedFilesRoot: opts?.mentionedFilesRoot ?? mentionRoot }
             : {}),
-          modelOverride: queuedModelOverride,
+          ...(queuedModelOverride !== undefined
+            ? { modelOverride: queuedModelOverride }
+            : {}),
         },
         controls: {
           thinkingEffort: controlsOverride?.thinkingEffort ?? thinkingEffort,
@@ -4274,7 +4279,10 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
             modelStateRef.current.effectiveModel &&
             modelStateRef.current.effectiveModel !== "unknown"
           ? modelStateRef.current.effectiveModel
-          : null;
+          : modelStateRef.current?.source === "runtime-default" &&
+              modelStateRef.current.applicationState === "pending"
+            ? null
+            : undefined;
     setBusy(true);
     setError(null);
     setDebugError(null);
@@ -4448,7 +4456,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
           // race), and so a brand-new chat (no sessionId yet) still pins its
           // session model. Only session-scoped picks need this; familiar- and
           // global-default models already resolve server-side from config.
-          ...(modelOverrideForRequest
+          ...(modelOverrideForRequest !== undefined
             ? {
                 modelOverride: modelOverrideForRequest,
                 modelOverrideScope: "session" as const,

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   persistedTurnControls,
   persistSendModelIntent,
+  resolveSendModelMetadata,
   turnRetryModel,
 } from "./chat-send-models.ts";
 
@@ -76,7 +77,7 @@ assert.equal(
       modelOverrideScope: "session",
     },
     sessionState,
-    "anthropic/claude-sonnet-4-5",
+    { model: "anthropic/claude-sonnet-4-5", source: "session" },
   ),
   true,
 );
@@ -95,11 +96,54 @@ assert.equal(
       modelOverrideScope: "session",
     },
     sessionState,
-    "anthropic/claude-sonnet-4-5",
+    { model: "anthropic/claude-sonnet-4-5", source: "session" },
   ),
   false,
   "an end-of-stream save cannot overwrite a newer mid-stream model PATCH",
 );
 assert.equal(conversation.modelIntent.model, "anthropic/claude-haiku-4-5");
+
+const runtimeConversation = {
+  sessionId: "session-2",
+  familiarId: "grok",
+  harness: "grok",
+  createdAt: "2026-07-30T00:00:00.000Z",
+  updatedAt: "2026-07-30T00:00:00.000Z",
+  turns: [],
+  modelIntent: {
+    model: "xai/grok-code-fast-1",
+    source: "session",
+  },
+};
+const runtimeBinding = { harness: "grok", model: "xai/grok-code-fast-1" };
+const runtimeConfig = {
+  defaults: { harness: "codex", model: "openai/gpt-5.6-sol" },
+  familiars: { grok: { harness: "grok", model: "xai/grok-code-fast-1" } },
+};
+const runtimeDefault = resolveSendModelMetadata({
+  body: { familiarId: "grok", modelOverride: null, modelOverrideScope: "session" },
+  config: runtimeConfig,
+  binding: runtimeBinding,
+  existingConversation: runtimeConversation,
+  modelForwardingEnabled: true,
+});
+assert.equal(runtimeDefault.desiredModel, "");
+assert.equal(runtimeDefault.modelState.source, "runtime-default");
+assert.equal(
+  persistSendModelIntent(
+    runtimeConversation,
+    { familiarId: "grok", modelOverride: null, modelOverrideScope: "session" },
+    runtimeDefault.modelState,
+    { model: "xai/grok-code-fast-1", source: "session" },
+  ),
+  true,
+  "an immediate clear rides the send and persists as a durable runtime-default intent",
+);
+assert.deepEqual(runtimeConversation.modelIntent, {
+  model: null,
+  source: "runtime-default",
+  applicationState: "saved",
+  reason: "Using the runtime's configured default model for this chat.",
+});
 
 console.log("chat-send-models.test.ts: ok");
