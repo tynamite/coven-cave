@@ -989,6 +989,7 @@ export function GroupChatView({ familiars, onSessionStarted, onOpenUrl, onDebugS
               [reply.familiarId]: {
                 harness: runtime,
                 model: modelForRuntimeSwitch(runtime) || null,
+                hermesProfile: runtime === "hermes" ? undefined : null,
               },
             },
           }),

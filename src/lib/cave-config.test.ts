@@ -293,6 +293,15 @@ try {
     { id: "research", homePath: "/home/cave/.hermes/profiles/research" },
     "an explicit Hermes profile binding survives config persistence and resolution",
   );
+  await config.saveConfig({
+    familiars: { hermesResearch: { harness: "codex", hermesProfile: null } },
+  });
+  cfg = await config.loadConfig();
+  assert.equal(
+    config.bindingFor(cfg, "hermesResearch").hermesProfile,
+    undefined,
+    "an explicit null Hermes profile patch removes a stale profile when a familiar changes runtime",
+  );
   assert.equal(
     config.bindingFor({
       defaults: {

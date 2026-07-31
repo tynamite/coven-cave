@@ -1709,19 +1709,18 @@ struct ChatView: View {
                 return
             }
 
-            let destinationModel = destination.pendingModelOverride
-            let destinationScope: ChatModelOverrideScope? = destinationModel.map { _ in
-                destination.sessionIds[familiar.id]?.isEmpty == false
-                    ? .nextMessage
-                    : .session
-            }
+            let destinationBinding = ChatModelTurnBinding.resolve(
+                pendingModel: destination.pendingModelOverride,
+                confirmedState: nil,
+                hasSession: destination.sessionIds[familiar.id]?.isEmpty == false
+            )
             destination.send(
                 prompt,
                 displayText: displayText,
                 reasoningEffort: thinkingEffort,
                 responseSpeed: responseSpeed,
-                modelOverride: destinationModel,
-                modelOverrideScope: destinationScope,
+                modelOverride: destinationBinding.modelOverride,
+                modelOverrideScope: destinationBinding.scope,
                 client: client
             ) {
                 app.touch(destination)

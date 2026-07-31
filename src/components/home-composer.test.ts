@@ -179,8 +179,8 @@ assert.doesNotMatch(
 
 assert.match(
   modelStateHook,
-  /body: JSON\.stringify\(\{[\s\S]*?\[selectedFamiliarId\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: nextModel \|\| null,[\s\S]*?\}\)/,
-  "useHomeModelState should persist runtime and model together when the combined selector changes runtime",
+  /body: JSON\.stringify\(\{[\s\S]*?\[selectedFamiliarId\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: nextModel \|\| null,[\s\S]*?hermesProfile: runtime === "hermes" \? undefined : null,[\s\S]*?\}\)/,
+  "useHomeModelState should persist runtime and model together while clearing an incompatible Hermes profile",
 );
 
 assert.doesNotMatch(

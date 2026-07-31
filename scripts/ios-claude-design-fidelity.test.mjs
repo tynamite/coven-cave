@@ -310,7 +310,7 @@ assert.match(
 );
 assert.match(
   chat,
-  /destination\.pendingModelOverride[\s\S]{0,650}modelOverrideScope: destinationScope/,
+  /ChatModelTurnBinding\.resolve\([\s\S]{0,300}pendingModel: destination\.pendingModelOverride,[\s\S]{0,650}modelOverrideScope: destinationBinding\.scope/,
   "forwarding honors a pending model choice on the destination chat",
 );
 assert.doesNotMatch(

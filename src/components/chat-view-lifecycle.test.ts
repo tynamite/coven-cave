@@ -179,6 +179,12 @@ assert.match(
 
 assert.match(
   source,
+  /const sendOptions: ChatSendOptions = \{[\s\S]*?modelState\?\.source === "session"[\s\S]*?modelState\?\.source === "runtime-default"[\s\S]*?applicationState === "pending"[\s\S]*?\? null[\s\S]*?: undefined/,
+  "queued sends serialize JSON null only for an explicitly pending runtime-default clear",
+);
+
+assert.match(
+  source,
   /const queueing = busy \|\| abortRef\.current;[\s\S]*?const queuedParentTurnId = queueing[\s\S]*?branchParent !== undefined \? branchParent : \(activeLeafId \|\| null\)[\s\S]*?parentTurnId: queuedParentTurnId[\s\S]*?if \(queueing\) \{[\s\S]*?options: sendOptions/,
   "queued messages must capture their visible branch leaf before later navigation can change it",
 );

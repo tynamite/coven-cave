@@ -72,8 +72,8 @@ import { readFile } from "node:fs/promises";
   );
   assert.match(
     source,
-    /handleUseHarnessFix[\s\S]{0,600}method: "PATCH"[\s\S]{0,300}familiars: \{[\s\S]*?\[familiar\.id\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: nextModel \|\| null/,
-    "the fix handler should rebind the familiar via /api/config PATCH",
+    /handleUseHarnessFix[\s\S]{0,600}method: "PATCH"[\s\S]{0,300}familiars: \{[\s\S]*?\[familiar\.id\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: nextModel \|\| null,[\s\S]*?hermesProfile: runtime === "hermes" \? undefined : null/,
+    "the fix handler should rebind the familiar and clear an incompatible Hermes profile",
   );
   assert.match(
     source,
@@ -97,8 +97,8 @@ import { readFile } from "node:fs/promises";
   );
   assert.match(
     source,
-    /familiars: \{[\s\S]*?\[reply\.familiarId\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: modelForRuntimeSwitch\(runtime\) \|\| null/,
-    "the group-chat fix should rebind the failing reply's familiar",
+    /familiars: \{[\s\S]*?\[reply\.familiarId\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: modelForRuntimeSwitch\(runtime\) \|\| null,[\s\S]*?hermesProfile: runtime === "hermes" \? undefined : null/,
+    "the group-chat fix should rebind the failing reply and clear an incompatible Hermes profile",
   );
   assert.match(
     source,
@@ -124,6 +124,11 @@ import { readFile } from "node:fs/promises";
     source,
     /await openTaskWork\(id\)/,
     "after rebinding, the board fix should re-run the task-chat start",
+  );
+  assert.match(
+    source,
+    /\[familiarId\]: \{[\s\S]*?harness: runtime,[\s\S]*?model: modelForRuntimeSwitch\(runtime\) \|\| null,[\s\S]*?hermesProfile: runtime === "hermes" \? undefined : null/,
+    "the board harness recovery clears a Hermes profile when switching runtimes",
   );
   assert.match(
     source,

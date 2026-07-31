@@ -108,6 +108,7 @@ export function useHomeModelState(selectedFamiliarId: string) {
                 [selectedFamiliarId]: {
                   harness: runtime,
                   model: nextModel || null,
+                  hermesProfile: runtime === "hermes" ? undefined : null,
                 },
               },
             }),

@@ -945,6 +945,7 @@ export function BoardView({
             [familiarId]: {
               harness: runtime,
               model: modelForRuntimeSwitch(runtime) || null,
+              hermesProfile: runtime === "hermes" ? undefined : null,
             },
           },
         }),

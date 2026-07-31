@@ -54,6 +54,11 @@ assert.equal(
   2,
   "connected send and offline replay preserve an explicit runtime-default scope even when the model is nil",
 );
+assert.match(
+  chatView,
+  /let destinationBinding = ChatModelTurnBinding\.resolve\(\s*\n\s*pendingModel: destination\.pendingModelOverride,[\s\S]*?modelOverride: destinationBinding\.modelOverride,\s*\n\s*modelOverrideScope: destinationBinding\.scope/,
+  "message forwarding uses the shared turn binding so a pending runtime-default clear becomes JSON null with session scope",
+);
 
 // --- Transport-failure conversion: only when provably unsent ----------------
 assert.match(

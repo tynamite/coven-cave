@@ -2521,6 +2521,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
                 [familiar.id]: {
                   harness: runtime,
                   model: nextModel || null,
+                  hermesProfile: runtime === "hermes" ? undefined : null,
                 },
               },
             }),
@@ -4784,6 +4785,7 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
             [familiar.id]: {
               harness: runtime,
               model: nextModel || null,
+              hermesProfile: runtime === "hermes" ? undefined : null,
             },
           },
         }),
@@ -5017,7 +5019,10 @@ export const ChatView = forwardRef<ChatViewHandle, Props>(function ChatView(
         modelState.effectiveModel &&
         modelState.effectiveModel !== "unknown"
           ? modelState.effectiveModel
-          : null,
+          : modelState?.source === "runtime-default" &&
+              modelState.applicationState === "pending"
+            ? null
+            : undefined,
     };
     setReplyTarget(null);
     setInput("");
