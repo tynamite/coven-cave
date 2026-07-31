@@ -12,8 +12,8 @@ assert.match(
 
 assert.match(
   source,
-  /\{\s*harness:\s*requestedHarness\s*\?\?\s*"codex",\s*model:\s*config\.defaults\.model\s*\}/,
-  "sessions without a familiar retain the global default model",
+  /harness:\s*requestedHarness\s*\?\?\s*"codex",\s*model:\s*runtimeOwnsModelDefault\(requestedHarness\s*\?\?\s*"codex"\)\s*\?\s*""\s*:\s*config\.defaults\.model/,
+  "unbound sessions omit runtime-owned defaults while Cave-owned harnesses retain the global model",
 );
 
 console.log("sessions route.test.ts: ok");
