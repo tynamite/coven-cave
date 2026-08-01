@@ -19,6 +19,7 @@ import {
   CLAUDE_OPUS_5_CAVE_ID,
   CLAUDE_OPUS_5_NATIVE_MODEL,
 } from "./claude-models.ts";
+import { canonicalHarnessId } from "./harness-adapters.ts";
 import { REGISTRY_RUNTIMES } from "./runtime-registry.gen.ts";
 
 export type RuntimeModelOption = { id: string; label: string };
@@ -39,7 +40,8 @@ export function transformModelIdForRuntime(
   modelId: string,
   runtimes: readonly RuntimeModelTransformMetadata[] = REGISTRY_RUNTIMES,
 ): string {
-  const transform = runtimes.find((runtime) => runtime.id === runtimeId)?.modelIdTransform;
+  const canonicalRuntime = canonicalHarnessId(runtimeId);
+  const transform = runtimes.find((runtime) => runtime.id === canonicalRuntime)?.modelIdTransform;
   if (transform === "preserve") return modelId;
 
   const slash = modelId.indexOf("/");
@@ -183,13 +185,14 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
 const GLOBAL_DEFAULT_MODEL = "openai/gpt-5.6-sol";
 
 export function catalogForRuntime(runtime: string): RuntimeModelCatalog | null {
-  const curated = RUNTIME_MODEL_CATALOG[runtime];
+  const canonicalRuntime = canonicalHarnessId(runtime);
+  const curated = RUNTIME_MODEL_CATALOG[canonicalRuntime];
   if (curated) return curated;
   // Registry-synced runtimes without a curated list get the runtime-managed
   // treatment: no menu, free-text only (same branch as openclaw above).
-  if (REGISTRY_RUNTIMES.some((entry) => entry.id === runtime)) {
+  if (REGISTRY_RUNTIMES.some((entry) => entry.id === canonicalRuntime)) {
     return {
-      runtime,
+      runtime: canonicalRuntime,
       provider: null,
       models: [],
       allowCustom: true,
@@ -231,8 +234,9 @@ export function isModelInCatalog(runtime: string, modelId: string): boolean {
 
 /** Translate a stable Cave model id only at the native runtime boundary. */
 export function modelForRuntimeLaunch(runtime: string, modelId: string): string {
+  const canonicalRuntime = canonicalHarnessId(runtime);
   if (
-    (runtime === "claude" || runtime === "claude-code") &&
+    canonicalRuntime === "claude" &&
     modelId === CLAUDE_OPUS_5_CAVE_ID
   ) {
     return CLAUDE_OPUS_5_NATIVE_MODEL;

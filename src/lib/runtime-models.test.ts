@@ -210,6 +210,26 @@ assert.equal(modelForRuntimeSwitch("codex"), "openai/gpt-5.6-sol");
 assert.equal(modelForRuntimeSwitch("hermes"), "");
 assert.equal(modelForRuntimeSwitch("hermes", "nous/hermes-4"), "nous/hermes-4");
 
+// Legacy package/binary aliases must use the same catalog and ownership rules
+// as their canonical adapter ids before any model fallback is computed.
+for (const [alias, canonical] of [["hermes-agent", "hermes"], ["opencode-ai", "opencode"]]) {
+  assert.deepEqual(
+    catalogForRuntime(alias),
+    catalogForRuntime(canonical),
+    `${alias} should resolve to the ${canonical} runtime catalog`,
+  );
+  assert.equal(
+    runtimeOwnsModelDefault(alias),
+    runtimeOwnsModelDefault(canonical),
+    `${alias} should preserve ${canonical} default ownership`,
+  );
+  assert.equal(
+    modelForRuntimeSwitch(alias),
+    modelForRuntimeSwitch(canonical),
+    `${alias} should preserve ${canonical} runtime-switch fallback behavior`,
+  );
+}
+
 // Unknown runtimes have no catalog.
 assert.equal(catalogForRuntime("nonexistent"), null);
 
