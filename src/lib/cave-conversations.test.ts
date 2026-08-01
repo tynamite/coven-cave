@@ -505,6 +505,18 @@ assert.deepEqual(
   },
   "conversation-level model intent must round-trip through the store",
 );
+modelIntentConv!.modelIntent = {
+  model: null,
+  source: "runtime-default",
+  applicationState: "saved",
+  reason: "Use the runtime default for this chat.",
+};
+await saveConversation(modelIntentConv!);
+assert.deepEqual(
+  (await loadConversation("model-intent"))?.modelIntent,
+  modelIntentConv!.modelIntent,
+  "a durable runtime-default session intent must round-trip through the store",
+);
 assert.equal(await deleteConversation("model-intent"), true);
 
 if (previousHome === undefined) {

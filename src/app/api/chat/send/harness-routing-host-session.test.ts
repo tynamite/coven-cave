@@ -331,7 +331,7 @@ assert.match(
 );
 assert.match(
   modelHelpers,
-  /const sessionModel =[\s\S]*modelOverrideScope === "session"[\s\S]*\? requestedModel[\s\S]*: args\.existingConversation\?\.modelIntent\?\.model \?\? null/,
+  /const sessionModel =[\s\S]*modelOverrideScope === "session"[\s\S]*\? requestedModel[\s\S]*args\.existingConversation\?\.modelIntent\?\.source === "session"/,
   "Session-scoped model overrides should feed the response model state, not only desiredModel",
 );
 assert.match(
@@ -346,7 +346,7 @@ assert.match(
 );
 assert.match(
   chatRoute,
-  /persistSendModelIntent\(\s*conv,\s*body,\s*modelState,\s*existingConversation\?\.modelIntent\?\.model \?\? null,\s*\)/,
+  /persistSendModelIntent\(\s*conv,\s*body,\s*modelState,\s*existingConversation\?\.modelIntent \?\? null,\s*\)/,
   "Native transcript persistence should guard session model intent against a newer mid-stream PATCH",
 );
 assert.match(

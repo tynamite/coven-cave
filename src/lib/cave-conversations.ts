@@ -70,8 +70,9 @@ export type ChatTurn = {
 };
 
 export type ConversationModelIntent = {
-  model: string;
-  source: Extract<ModelScope, "session">;
+  /** Null is a deliberate session-level choice to defer to the runtime. */
+  model: string | null;
+  source: Extract<ModelScope, "session" | "runtime-default">;
   applicationState?: ModelApplicationState;
   reason?: string;
 };

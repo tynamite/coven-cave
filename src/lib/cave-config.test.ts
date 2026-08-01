@@ -228,6 +228,42 @@ try {
   assert.equal(novaBinding.role, "review familiar");
   assert.equal(novaBinding.autoSelfReport, true);
   assert.equal(config.bindingFor(cfg, "missing").autoSelfReport, false);
+  const modelOwnershipConfig = {
+    ...cfg,
+    familiars: {
+      ...cfg.familiars,
+      grokDefault: { harness: "grok" },
+      grokExplicit: { harness: "grok", model: "xai/grok-4" },
+      hermesAliasDefault: { harness: "hermes-agent" },
+      opencodeAliasDefault: { harness: "opencode-ai" },
+      claudeDefault: { harness: "claude" },
+    },
+  };
+  assert.equal(
+    config.bindingFor(modelOwnershipConfig, "grokDefault").model,
+    "",
+    "a runtime-owned default must remain absent during binding resolution",
+  );
+  assert.equal(
+    config.bindingFor(modelOwnershipConfig, "grokExplicit").model,
+    "xai/grok-4",
+    "an explicit model remains authoritative for a runtime-owned default",
+  );
+  assert.equal(
+    config.bindingFor(modelOwnershipConfig, "hermesAliasDefault").model,
+    "",
+    "a legacy Hermes alias must preserve runtime-owned default absence",
+  );
+  assert.equal(
+    config.bindingFor(modelOwnershipConfig, "opencodeAliasDefault").model,
+    "",
+    "a legacy OpenCode alias must preserve runtime-owned default absence",
+  );
+  assert.equal(
+    config.bindingFor(modelOwnershipConfig, "claudeDefault").model,
+    cfg.defaults.model,
+    "a Cave-owned runtime still inherits the global default model",
+  );
 
   await config.saveConfig({
     defaults: {
@@ -268,6 +304,15 @@ try {
     config.bindingFor(cfg, "hermesResearch").hermesProfile,
     { id: "research", homePath: "/home/cave/.hermes/profiles/research" },
     "an explicit Hermes profile binding survives config persistence and resolution",
+  );
+  await config.saveConfig({
+    familiars: { hermesResearch: { harness: "codex", hermesProfile: null } },
+  });
+  cfg = await config.loadConfig();
+  assert.equal(
+    config.bindingFor(cfg, "hermesResearch").hermesProfile,
+    undefined,
+    "an explicit null Hermes profile patch removes a stale profile when a familiar changes runtime",
   );
   assert.equal(
     config.bindingFor({

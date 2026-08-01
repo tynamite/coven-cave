@@ -19,6 +19,7 @@ import {
   CLAUDE_OPUS_5_CAVE_ID,
   CLAUDE_OPUS_5_NATIVE_MODEL,
 } from "./claude-models.ts";
+import { canonicalHarnessId } from "./harness-adapters.ts";
 import { REGISTRY_RUNTIMES } from "./runtime-registry.gen.ts";
 
 export type RuntimeModelOption = { id: string; label: string };
@@ -39,7 +40,8 @@ export function transformModelIdForRuntime(
   modelId: string,
   runtimes: readonly RuntimeModelTransformMetadata[] = REGISTRY_RUNTIMES,
 ): string {
-  const transform = runtimes.find((runtime) => runtime.id === runtimeId)?.modelIdTransform;
+  const canonicalRuntime = canonicalHarnessId(runtimeId);
+  const transform = runtimes.find((runtime) => runtime.id === canonicalRuntime)?.modelIdTransform;
   if (transform === "preserve") return modelId;
 
   const slash = modelId.indexOf("/");
@@ -69,6 +71,12 @@ export type RuntimeModelCatalog = {
   defaultModel?: string;
   /** User may type any model id not present in `models`. */
   allowCustom: boolean;
+  /**
+   * Who chooses the model when Cave has no explicit familiar/session/turn
+   * selection. A runtime-owned default is represented by omitting the model
+   * launch argument; catalog entries remain choices, never implicit defaults.
+   */
+  defaultOwner: "cave" | "runtime";
 };
 
 // Models exposed by the authenticated Codex account. Hermes accepts the full
@@ -98,6 +106,7 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
       { id: "openai/gpt-5.3-codex-spark", label: "GPT-5.3 Codex Spark" },
     ],
     allowCustom: true,
+    defaultOwner: "cave",
   },
   claude: {
     runtime: "claude",
@@ -111,6 +120,7 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
       { id: "anthropic/claude-haiku-4-5", label: "Claude Haiku 4.5" },
     ],
     allowCustom: true,
+    defaultOwner: "cave",
   },
   // Copilot serves multiple providers' models through one GitHub subscription;
   // ids are namespaced under `github/`; its registry transform removes that
@@ -132,12 +142,14 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
       { id: "github/gemini-3.1-pro", label: "Gemini 3.1 Pro" },
     ],
     allowCustom: true,
+    defaultOwner: "cave",
   },
   hermes: {
     runtime: "hermes",
     provider: "openai",
     models: HERMES_AUTHENTICATED_MODELS,
     allowCustom: true,
+    defaultOwner: "runtime",
   },
   // Grok's authenticated catalog is discovered live by `/api/harnesses` for
   // Familiar Studio; this fallback keeps non-web surfaces on a valid known
@@ -148,6 +160,7 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
     models: [],
     defaultModel: "grok-4.5",
     allowCustom: true,
+    defaultOwner: "runtime",
   },
   // OpenCode authenticates a user-selected set of providers. Its menu is
   // loaded from `opencode models` at runtime instead of freezing a catalog.
@@ -157,6 +170,7 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
     models: [],
     defaultModel: "",
     allowCustom: true,
+    defaultOwner: "runtime",
   },
   // No clean provider → defer to the runtime's own CLI: free-text only, no menu.
   openclaw: {
@@ -164,18 +178,26 @@ export const RUNTIME_MODEL_CATALOG: Record<string, RuntimeModelCatalog> = {
     provider: null,
     models: [],
     allowCustom: true,
+    defaultOwner: "runtime",
   },
 };
 
 const GLOBAL_DEFAULT_MODEL = "openai/gpt-5.6-sol";
 
 export function catalogForRuntime(runtime: string): RuntimeModelCatalog | null {
-  const curated = RUNTIME_MODEL_CATALOG[runtime];
+  const canonicalRuntime = canonicalHarnessId(runtime);
+  const curated = RUNTIME_MODEL_CATALOG[canonicalRuntime];
   if (curated) return curated;
   // Registry-synced runtimes without a curated list get the runtime-managed
   // treatment: no menu, free-text only (same branch as openclaw above).
-  if (REGISTRY_RUNTIMES.some((entry) => entry.id === runtime)) {
-    return { runtime, provider: null, models: [], allowCustom: true };
+  if (REGISTRY_RUNTIMES.some((entry) => entry.id === canonicalRuntime)) {
+    return {
+      runtime: canonicalRuntime,
+      provider: null,
+      models: [],
+      allowCustom: true,
+      defaultOwner: "runtime",
+    };
   }
   return null;
 }
@@ -183,6 +205,25 @@ export function catalogForRuntime(runtime: string): RuntimeModelCatalog | null {
 export function defaultModelForRuntime(runtime: string): string {
   const catalog = catalogForRuntime(runtime);
   return catalog?.models[0]?.id ?? catalog?.defaultModel ?? GLOBAL_DEFAULT_MODEL;
+}
+
+/** Whether an unselected launch must defer to the runtime/provider config. */
+export function runtimeOwnsModelDefault(runtime: string): boolean {
+  return catalogForRuntime(runtime)?.defaultOwner === "runtime";
+}
+
+/**
+ * Resolve the model value persisted during a runtime switch. Explicit user
+ * selections win; otherwise runtime-owned defaults stay empty so config merge
+ * paths remove any stale model from the previous runtime.
+ */
+export function modelForRuntimeSwitch(
+  runtime: string,
+  selectedModel?: string | null,
+): string {
+  const explicitModel = selectedModel?.trim() ?? "";
+  if (explicitModel) return explicitModel;
+  return runtimeOwnsModelDefault(runtime) ? "" : defaultModelForRuntime(runtime);
 }
 
 export function isModelInCatalog(runtime: string, modelId: string): boolean {
@@ -193,8 +234,9 @@ export function isModelInCatalog(runtime: string, modelId: string): boolean {
 
 /** Translate a stable Cave model id only at the native runtime boundary. */
 export function modelForRuntimeLaunch(runtime: string, modelId: string): string {
+  const canonicalRuntime = canonicalHarnessId(runtime);
   if (
-    (runtime === "claude" || runtime === "claude-code") &&
+    canonicalRuntime === "claude" &&
     modelId === CLAUDE_OPUS_5_CAVE_ID
   ) {
     return CLAUDE_OPUS_5_NATIVE_MODEL;

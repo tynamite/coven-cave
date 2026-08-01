@@ -5,8 +5,10 @@ import {
   catalogForRuntime,
   defaultModelForRuntime,
   isModelInCatalog,
+  modelForRuntimeSwitch,
   modelForCaveFromRuntimeEcho,
   modelForRuntimeLaunch,
+  runtimeOwnsModelDefault,
   runtimeModelIdForLaunch,
   transformModelIdForRuntime,
 } from "./runtime-models.ts";
@@ -199,6 +201,34 @@ assert.equal(openclaw.allowCustom, true, "free-text must stay allowed when there
 assert.equal(defaultModelForRuntime("codex"), "openai/gpt-5.6-sol");
 assert.equal(defaultModelForRuntime("hermes"), "openai/gpt-5.6-sol", "Hermes should default to the first authenticated model");
 assert.equal(defaultModelForRuntime("openclaw"), "openai/gpt-5.6-sol", "OpenClaw should inherit a real global default, not openclaw-local");
+assert.equal(runtimeOwnsModelDefault("codex"), false);
+assert.equal(runtimeOwnsModelDefault("hermes"), true);
+assert.equal(runtimeOwnsModelDefault("grok"), true);
+assert.equal(runtimeOwnsModelDefault("opencode"), true);
+assert.equal(runtimeOwnsModelDefault("openclaw"), true);
+assert.equal(modelForRuntimeSwitch("codex"), "openai/gpt-5.6-sol");
+assert.equal(modelForRuntimeSwitch("hermes"), "");
+assert.equal(modelForRuntimeSwitch("hermes", "nous/hermes-4"), "nous/hermes-4");
+
+// Legacy package/binary aliases must use the same catalog and ownership rules
+// as their canonical adapter ids before any model fallback is computed.
+for (const [alias, canonical] of [["hermes-agent", "hermes"], ["opencode-ai", "opencode"]]) {
+  assert.deepEqual(
+    catalogForRuntime(alias),
+    catalogForRuntime(canonical),
+    `${alias} should resolve to the ${canonical} runtime catalog`,
+  );
+  assert.equal(
+    runtimeOwnsModelDefault(alias),
+    runtimeOwnsModelDefault(canonical),
+    `${alias} should preserve ${canonical} default ownership`,
+  );
+  assert.equal(
+    modelForRuntimeSwitch(alias),
+    modelForRuntimeSwitch(canonical),
+    `${alias} should preserve ${canonical} runtime-switch fallback behavior`,
+  );
+}
 
 // Unknown runtimes have no catalog.
 assert.equal(catalogForRuntime("nonexistent"), null);

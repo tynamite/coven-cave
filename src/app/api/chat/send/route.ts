@@ -179,6 +179,7 @@ import {
 import { isTrustedChatHarness, canonicalHarnessId } from "@/lib/harness-adapters";
 import {
   type ChatTurn,
+  type ConversationModelIntent,
   createConversationStub,
   loadConversation,
   saveConversation,
@@ -343,7 +344,7 @@ type SendBody = {
    * a harness resume token. */
   startNewConversation?: boolean;
   projectRoot?: string;
-  modelOverride?: string;
+  modelOverride?: string | null;
   modelOverrideScope?: "next-message" | "session";
   reasoningEffort?: string;
   responseSpeed?: string;
@@ -570,7 +571,7 @@ function openClawChatResponse(args: {
   attachments: ChatAttachment[];
   desiredModel: string;
   modelState: ChatModelState;
-  initialModelIntent: string | null;
+  initialModelIntent: ConversationModelIntent | null;
 }): Response {
   const stream = new ReadableStream<Uint8Array>({
     start: async (controller) => {
@@ -1874,7 +1875,7 @@ export async function POST(req: Request) {
       attachments: persistedAttachments,
       desiredModel,
       modelState,
-      initialModelIntent: existingConversation?.modelIntent?.model ?? null,
+      initialModelIntent: existingConversation?.modelIntent ?? null,
     });
   }
 
@@ -4715,7 +4716,7 @@ export async function POST(req: Request) {
             conv,
             body,
             modelState,
-            existingConversation?.modelIntent?.model ?? null,
+            existingConversation?.modelIntent ?? null,
           );
           // Work-branch snapshot from the chat's own cwd — per-session PR
           // attribution (badges + merged-PR auto-archive). Best-effort; a

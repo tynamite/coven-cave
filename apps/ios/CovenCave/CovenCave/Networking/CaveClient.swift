@@ -484,10 +484,31 @@ struct CaveClient {
 
     /// Set the model for this chat (`session` scope) or the familiar (`familiar-default`).
     @discardableResult
-    func setChatModel(familiarId: String, sessionId: String?, model: String, scope: String) async throws -> ChatModelStateResponse {
-        var body: [String: String] = ["familiarId": familiarId, "model": model, "scope": scope]
-        if let sessionId, !sessionId.isEmpty { body["sessionId"] = sessionId }
-        let payload = try JSONEncoder().encode(body)
+    func setChatModel(familiarId: String, sessionId: String?, model: String?, scope: String) async throws -> ChatModelStateResponse {
+        struct Body: Encodable {
+            let familiarId: String
+            let sessionId: String?
+            let model: String?
+            let scope: String
+
+            enum CodingKeys: String, CodingKey {
+                case familiarId, sessionId, model, scope
+            }
+
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(familiarId, forKey: .familiarId)
+                try container.encodeIfPresent(sessionId, forKey: .sessionId)
+                if let model {
+                    try container.encode(model, forKey: .model)
+                } else {
+                    try container.encodeNil(forKey: .model)
+                }
+                try container.encode(scope, forKey: .scope)
+            }
+        }
+        let payload = try JSONEncoder().encode(
+            Body(familiarId: familiarId, sessionId: sessionId, model: model, scope: scope))
         let req = try request("api/chat/model-state", method: "PATCH", body: payload)
         let (data, resp) = try await data(for: req)
         try Self.check(resp)
@@ -525,6 +546,29 @@ struct CaveClient {
         /// the send instead of mutating the familiar's global default.
         var modelOverride: String? = nil
         var modelOverrideScope: ChatModelOverrideScope? = nil
+
+        private enum CodingKeys: String, CodingKey {
+            case familiarId, prompt, sessionId, projectRoot, attachments, runId
+            case reasoningEffort, responseSpeed, modelOverride, modelOverrideScope
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(familiarId, forKey: .familiarId)
+            try container.encode(prompt, forKey: .prompt)
+            try container.encodeIfPresent(sessionId, forKey: .sessionId)
+            try container.encodeIfPresent(projectRoot, forKey: .projectRoot)
+            try container.encodeIfPresent(attachments, forKey: .attachments)
+            try container.encodeIfPresent(runId, forKey: .runId)
+            try container.encode(reasoningEffort, forKey: .reasoningEffort)
+            try container.encode(responseSpeed, forKey: .responseSpeed)
+            if let modelOverride {
+                try container.encode(modelOverride, forKey: .modelOverride)
+            } else if modelOverrideScope == .session {
+                try container.encodeNil(forKey: .modelOverride)
+            }
+            try container.encodeIfPresent(modelOverrideScope, forKey: .modelOverrideScope)
+        }
     }
 
     /// One decoded SSE frame: the event plus the server's `id:` (the run

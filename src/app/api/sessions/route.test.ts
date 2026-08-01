@@ -6,14 +6,14 @@ const source = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
 
 assert.match(
   source,
-  /body:\s*\{[\s\S]{0,160}harness,[\s\S]{0,80}model:\s*binding\.model,/,
-  "direct daemon session launches forward the resolved familiar or global model",
+  /\.\.\.\(binding\.model \? \{ model: binding\.model \} : \{\}\)/,
+  "direct daemon session launches omit an absent runtime-owned model",
 );
 
 assert.match(
   source,
-  /\{\s*harness:\s*requestedHarness\s*\?\?\s*"codex",\s*model:\s*config\.defaults\.model\s*\}/,
-  "sessions without a familiar retain the global default model",
+  /harness:\s*requestedHarness\s*\?\?\s*"codex",\s*model:\s*runtimeOwnsModelDefault\(requestedHarness\s*\?\?\s*"codex"\)\s*\?\s*""\s*:\s*config\.defaults\.model/,
+  "unbound sessions omit runtime-owned defaults while Cave-owned harnesses retain the global model",
 );
 
 console.log("sessions route.test.ts: ok");
